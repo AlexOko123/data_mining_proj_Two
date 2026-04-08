@@ -59,7 +59,7 @@ def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2):
     Centroid, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
         data,
         c=K,      # Number of clusters
-        m=2,                 # Fuzziness coefficient
+        m=fuzzy_coeff,                 # Fuzziness coefficient
         error=0.005,
         maxiter=1000,
         init=None

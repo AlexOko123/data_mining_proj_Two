@@ -1,4 +1,8 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import skfuzzy as fuzz
+from sklearn.decomposition import PCA
 # Skeleton Driver. It will contain:
 # 1. Data Pre-processing and Normalization
 # 2. Model Implementation
@@ -38,19 +42,56 @@ def normalize_data(Gene_Data):
             Gene_Data[col] = (Gene_Data[col] - mean_val) / std_val
     return Gene_Data
 
+def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2):
+    # Fuzzy C Means Cluster Alg Brought to us by Skifuzzy!
+
+    # You have to Convert DF to numpy and TP to fit the function call
+    data = Gene_Data.to_numpy().T
+
+    # Run fuzzy c means
+    #Centroid is the list of Centroids
+    # u is Final Membership of where each point belongs
+    # u0 Is Inital Starting positions
+    # d is the distance a point is from each centroid
+    # jm Objection function tracks loss, Idk what to do with that
+    # p is number of Iterations
+    # fpc is the fuzzy partition Coefficent
+    Centroid, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+        data,
+        c=K,      # Number of clusters
+        m=2,                 # Fuzziness coefficient
+        error=0.005,
+        maxiter=1000,
+        init=None
+    )
+    print("Centroid:", Centroid)
+    print("u:", u)
+    print("u0:", u0)
+    print("d:", d)
+    print("jm:", jm)
+    print("fpc:", fpc)
+
+    # Force the max cluster ownership
+    cluster_membership = np.argmax(u, axis=0)
+
+    return cluster_membership, Centroid, u
 
 if __name__ == "__main__":
     # Step 1: Data Pre-processing and Normalization
     # Load your dataset here
     Gene_data = load_dataset("Longotor1delta.csv")
-    Gene_data = normalize_data(Gene_data)
-    print(Gene_data.head())
     # Perform necessary pre-processing steps (e.g., handling missing values, encoding categorical variables)
     # Normalize the data if required (z-score normalization or min-max scaling)
+    Gene_data = normalize_data(Gene_data)
+    print(Gene_data.head())
+
 
     # Step 2: Model Implementation
     # Choose unsupervised learning model (e.g., K-Means and fuzzy C-Means)
     # Train the model on the training dataset
+    
+    #---------- FUZZY
+    data_membership, Centroids, fuzzy_matrix = fuzzy_cluster(Gene_data, K=3 ,fuzzy_coeff = 2)
 
     # Step 3: Evaluation Methodology
     # Evaluate the model using appropriate metrics (e.g., silhouette score, Davies-Bouldin index)

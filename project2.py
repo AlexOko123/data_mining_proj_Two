@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import skfuzzy as fuzz
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+
 # Skeleton Driver. It will contain:
 # 1. Data Pre-processing and Normalization
 # 2. Model Implementation
@@ -13,10 +15,8 @@ def load_dataset(Dataset):
     print("Reading in File:", Dataset)
 
     try:
-        Gene_Data = pd.read_csv(Dataset)
-        # Take Only the Last 3 NOTE!!!! Excel had 3 extra columns I manually removed *
-        Gene_Data = Gene_Data.iloc[:, -3:]
-
+        Gene_Data = pd.read_excel(Dataset, usecols="D:F")
+       
         print("raw dataset | peeking data frame head:")
         print(Gene_Data.head())
 
@@ -41,6 +41,12 @@ def normalize_data(Gene_Data):
             #Z = (X - mean) / std
             Gene_Data[col] = (Gene_Data[col] - mean_val) / std_val
     return Gene_Data
+
+def k_means_cluster(Gene_Data, K):
+    kmeans = KMeans(n_clusters=K, random_state=42)
+    cluster_labels = kmeans.fit_predict(Gene_Data)
+    return cluster_labels, kmeans.cluster_centers_, kmeans.inertia_
+
 
 def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2):
     # Fuzzy C Means Cluster Alg Brought to us by Skifuzzy!
@@ -79,7 +85,7 @@ def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2):
 if __name__ == "__main__":
     # Step 1: Data Pre-processing and Normalization
     # Load your dataset here
-    Gene_data = load_dataset("Longotor1delta.csv")
+    Gene_data = load_dataset("Longotor1delta.xls")
     # Perform necessary pre-processing steps (e.g., handling missing values, encoding categorical variables)
     # Normalize the data if required (z-score normalization or min-max scaling)
     Gene_data = normalize_data(Gene_data)
@@ -89,7 +95,21 @@ if __name__ == "__main__":
     # Step 2: Model Implementation
     # Choose unsupervised learning model (e.g., K-Means and fuzzy C-Means)
     # Train the model on the training dataset
-    
+    inertia = []
+    k_range = range(2, int(np.sqrt(len(Gene_data)))+1)
+    #---------- K-MEANS
+    for i in range(2,int(np.sqrt(len(Gene_data)))+1):
+        cluster_labels, centroids, inertia_val = k_means_cluster(Gene_data, i)
+        #print(f"K-Means with K={i}: Centroids: {centroids}")
+        inertia.append(inertia_val)
+
+    # visualize k-means with elbow method
+    plt.plot(k_range , inertia, marker='o')
+    plt.xlabel("Number of clusters (K)")
+    plt.ylabel("Inertia")
+    plt.title("Elbow Method")
+    plt.show()
+
     #---------- FUZZY
     data_membership, Centroids, fuzzy_matrix = fuzzy_cluster(Gene_data, K=3 ,fuzzy_coeff = 2)
 

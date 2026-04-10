@@ -151,6 +151,7 @@ def plot_kmeans(x, y, cent_x, cent_y, labels):
 
 def plot_fuzzy_c(x, y, cent_x, cent_y, labels, membership_matrix):
     
+    # more confident classifications have larger data markers
     confidence = membership_matrix[labels, np.arange(len(labels))]
     sizes = confidence * 50
 
@@ -193,18 +194,23 @@ if __name__ == "__main__":
     # ====== step 3: visualizations for kmeans and fuzzy c means
     print("loading kmeans visualizer")
 
+    # dataset X & Y dimension reduction | centroid dimension reduction 
     red_x, red_y = dimension_reduction(Gene_data)
     red_cent_x, red_cent_y = dimension_reduction(km_model.cluster_centers_)
 
+    # gets labels
     labels = km_model.labels_
 
+    # plot kmeans
     plot_kmeans(red_x, red_y, red_cent_x, red_cent_y, labels)
     input('press enter to continue')
 
     print("loading fuzzy c-means visualizer")
 
+    # centroid dimension reduction
     red_cent_x, red_cent_y = dimension_reduction(Centroids)
 
+    # plot fuzzy c-means
     plot_fuzzy_c(red_x, red_y, red_cent_x, red_cent_y, data_membership, membership_matrix)
     input('press enter to continue')
 

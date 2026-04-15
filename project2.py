@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import skfuzzy as fuzz
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score as S_Score
+from sklearn.metrics import calinski_harabasz_score as CH_score
+from sklearn.metrics import davies_bouldin_score as DB_score
+
+import os
 
 
 # Skeleton Driver. It will contain:
@@ -70,7 +75,7 @@ def test_for_best_k_val():
         inertia.append(inertia_val)
 
     # plotting elbow
-    plt.plot(k_range , inertia, marker='.')
+    plt.plot(k_range , inertia, marker='')
     plt.xlabel("Number of clusters (K)")
     plt.ylabel("Inertia")
     plt.title("Elbow Method")
@@ -160,15 +165,45 @@ def plot_fuzzy_c(x, y, cent_x, cent_y, labels, membership_matrix):
     plt.title("fuzzy c-Means Clusters")
     plt.show() 
 
+# ======================================================= evaluation metrics
+
+def print_SScore(SScore):
+
+    print()
+    if( -1.0 <= SScore < 0):
+        print(f"Silhouette Score :: {SScore} | S-Score < 0.0, bad clustering") 
+    
+    elif( 0 <= SScore < 0.25 ):
+        print(f"Silhouette Score :: {SScore} | 0.0 <= S-Score < 0.25, poor clustering") 
+    
+    elif(0.25 <= SScore < 0.5):
+        print(f"Silhouette Score :: {SScore} | 0.25 <= S-Score < 0.50, weak clustering") 
+    
+    elif(0.5 <= SScore < 0.7):
+        print(f"Silhouette Score :: {SScore} | 0.50 <= S-Score < 0.70, reasonable clustering") 
+    
+    elif( 0.7 <= SScore <= 1):
+        print(f"Silhouette Score :: {SScore} | 0.70 <= S-Score <= 1.0, strong clustering") 
+    
+        
+def print_CH_score(CHScore):
+    
+    print()
+    print(f"Calinski Score :: {CHScore}\t| ranges 0 -> +infinity; the higher the better")
+    # Ranges from 0 to +infinity | the higher the better 
+
+def print_DB_score(DBScore):
+    
+    print()
+    print(f"Davies Bouldin Score :: {DBScore} | !! still need to write evaluation reference !! ")
+
 
 # ======================================================= main
 if __name__ == "__main__":
-    
-    view_elbow = False 
-    k_val = 10
-    
+        
     # ===== step 1: data pre-processing and normalization 
     print("time to setup the data, big guy")
+    print()
 
     # load dataset | preprocessing | normalization
     # e.g., handling missing values, encoding categorical variables
@@ -178,43 +213,83 @@ if __name__ == "__main__":
     Gene_data = z_score_normalization(Gene_data)
 
     # ======= step 2: model 1 implementation | fuzzy C - means
+    print()
     print("building fuzzy c-means model :: ")
     
     data_membership, Centroids, membership_matrix = fuzzy_cluster(Gene_data, K=3 ,fuzzy_coeff = 2)
 
     # ====== step 2.1: model 2 implementation | K - means
+    print()
     print("ohhh yeah, fuzzy c-means done. building Kmeans now :: ")
     
-    if view_elbow == True:
+    print()
+    if input("view kmeans Elbow graph <y/n> :: ") == 'y':
         test_for_best_k_val()
-        input('press enter to continue')
+        
+
+    k_val = 13
+    print()
+    usr_inp = input("pick a value for K <enter 0 for default: k = 13 > :: ") 
+    
+    if  (int)(usr_inp) > 1:
+        k_val = (int)(usr_inp)
+  
 
     km_model = k_means_cluster(Gene_Data=Gene_data, k=k_val)
+    
+    # gets labels
+    km_pred_y = km_model.labels_
+
 
     # ====== step 3: visualizations for kmeans and fuzzy c means
-    print("loading kmeans visualizer")
+    print()
+    if input("view kmeans clustering graph <y/n> :: ") == 'y':
+        
+        print("loading kmeans visualizer")
 
-    # dataset X & Y dimension reduction | centroid dimension reduction 
-    red_x, red_y = dimension_reduction(Gene_data)
-    red_cent_x, red_cent_y = dimension_reduction(km_model.cluster_centers_)
+        # dataset X & Y dimension reduction | centroid dimension reduction 
+        red_x, red_y = dimension_reduction(Gene_data)
+        red_cent_x, red_cent_y = dimension_reduction(km_model.cluster_centers_)
 
-    # gets labels
-    labels = km_model.labels_
+        # plot kmeans
+        plot_kmeans(red_x, red_y, red_cent_x, red_cent_y, km_pred_y)
 
-    # plot kmeans
-    plot_kmeans(red_x, red_y, red_cent_x, red_cent_y, labels)
-    input('press enter to continue')
+    print()
+    if input("view fuzzy c-means graph <y/n> :: ") == 'y':
 
-    print("loading fuzzy c-means visualizer")
+        print("loading fuzzy c-means visualizer")
 
-    # centroid dimension reduction
-    red_cent_x, red_cent_y = dimension_reduction(Centroids)
+        # centroid dimension reduction
+        red_x, red_y = dimension_reduction(Gene_data)
+        red_cent_x, red_cent_y = dimension_reduction(Centroids)
 
-    # plot fuzzy c-means
-    plot_fuzzy_c(red_x, red_y, red_cent_x, red_cent_y, data_membership, membership_matrix)
-    input('press enter to continue')
+        # plot fuzzy c-means
+        plot_fuzzy_c(red_x, red_y, red_cent_x, red_cent_y, data_membership, membership_matrix)
 
-    
+        
     # ====== step 3: evaluation and final outputs
+    print()
     print("we're freaking doing the final evaluation now")
+
+    print()
+    if input('clear screen for metrics <y/n> ') == 'y':
+        os.system('cls')
+
+    print()
+    if input('view km evaluation metrics <y/n> ') == 'y':
+        
+        print()
+        print("showing kmeans evaluation metrics")
+    
+        # cluster quality metrics | how good are the clusters themselves
+        print_SScore(S_Score(Gene_data, km_pred_y))
+        print_CH_score(CH_score(Gene_data, km_pred_y)) 
+        print_DB_score(DB_score(Gene_data, km_pred_y))
+    
+        print()
+                
+    print()
+    if input('view fuzzy c-means evaluation metrics <y/n> ') == 'y':
+        print()
+        print("working on evaluation metrics for fuzzy cmeans")
 

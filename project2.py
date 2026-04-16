@@ -110,8 +110,8 @@ def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2, view_model_summary = False):
     )
 
     # variable renaming
-    initial_membership_matrix  = u0  # Final Membership of where each point belongs
-    final_membership_matrix = u # Inital Starting positions
+    initial_membership_matrix  = u0  # Inital Starting positions
+    final_membership_matrix = u # Final Membership of where each point belongs
     dist_from_centroid = dist  # the distance a point is from each centroid
     objective_func = jm        # Objection function tracks loss, Idk what to do with that
     num_of_iterations = p      # number of Iterations
@@ -126,7 +126,7 @@ def fuzzy_cluster(Gene_Data, K=3, fuzzy_coeff = 2, view_model_summary = False):
     # Force the max cluster ownership
     cluster_membership = np.argmax(u, axis=0)
 
-    return cluster_membership, centroid, final_membership_matrix
+    return cluster_membership, centroid, final_membership_matrix, fuzz_partition_coef
 
 
 # ======================================================== visualization methods
@@ -169,33 +169,41 @@ def plot_fuzzy_c(x, y, cent_x, cent_y, labels, membership_matrix):
 
 def print_SScore(SScore):
 
+    # note: measures both separation & cohesion. works at the point level
+    # measures a single point's dist from points in its own cluster
+    # then dist between points in neighboring cluster. then boring math steps get final S score
+
     print()
     if( -1.0 <= SScore < 0):
-        print(f"Silhouette Score :: {SScore} | S-Score < 0.0, bad clustering") 
+        print(f"Silhouette Score :: {SScore} | S-Score < 0.0; bad clustering") 
     
     elif( 0 <= SScore < 0.25 ):
-        print(f"Silhouette Score :: {SScore} | 0.0 <= S-Score < 0.25, poor clustering") 
+        print(f"Silhouette Score :: {SScore} | 0.0 <= S-Score < 0.25; poor clustering") 
     
     elif(0.25 <= SScore < 0.5):
-        print(f"Silhouette Score :: {SScore} | 0.25 <= S-Score < 0.50, weak clustering") 
+        print(f"Silhouette Score :: {SScore} | 0.25 <= S-Score < 0.50; weak clustering") 
     
     elif(0.5 <= SScore < 0.7):
-        print(f"Silhouette Score :: {SScore} | 0.50 <= S-Score < 0.70, reasonable clustering") 
+        print(f"Silhouette Score :: {SScore} | 0.50 <= S-Score < 0.70; reasonable clustering") 
     
     elif( 0.7 <= SScore <= 1):
-        print(f"Silhouette Score :: {SScore} | 0.70 <= S-Score <= 1.0, strong clustering") 
+        print(f"Silhouette Score :: {SScore} | 0.70 <= S-Score <= 1.0; strong clustering") 
     
         
 def print_CH_score(CHScore):
     
+    # note: measures both separation and cohesion, works at the cluster level not point level 
+    # measures a point's dist from it's centroid & a cluster's centroid's dist from global cent
     print()
     print(f"Calinski Score :: {CHScore}\t| ranges 0 -> +infinity; the higher the better")
-    # Ranges from 0 to +infinity | the higher the better 
 
 def print_DB_score(DBScore):
     
+    # note: measures separation & cohesion. works on a cluster level
+    # checks how far the ave dist is between a cluster's centroid and assigned points
+    # checks how far the cluster itself is from it's neighbor. the tighter and further the 
     print()
-    print(f"Davies Bouldin Score :: {DBScore} | !! still need to write evaluation reference !! ")
+    print(f"Davies Bouldin Score :: {DBScore} | ranges 0 -> +infinity; the closer to 0 the better ")
 
 
 # ======================================================= main
@@ -216,7 +224,7 @@ if __name__ == "__main__":
     print()
     print("building fuzzy c-means model :: ")
     
-    data_membership, Centroids, membership_matrix = fuzzy_cluster(Gene_data, K=3 ,fuzzy_coeff = 2)
+    data_membership, Centroids, membership_matrix, fpc = fuzzy_cluster(Gene_data, K=3 ,fuzzy_coeff = 2)
 
     # ====== step 2.1: model 2 implementation | K - means
     print()
@@ -265,7 +273,6 @@ if __name__ == "__main__":
 
         # plot fuzzy c-means
         plot_fuzzy_c(red_x, red_y, red_cent_x, red_cent_y, data_membership, membership_matrix)
-
         
     # ====== step 3: evaluation and final outputs
     print()
@@ -275,21 +282,23 @@ if __name__ == "__main__":
     if input('clear screen for metrics <y/n> ') == 'y':
         os.system('cls')
 
-    print()
-    if input('view km evaluation metrics <y/n> ') == 'y':
-        
-        print()
-        print("showing kmeans evaluation metrics")
     
-        # cluster quality metrics | how good are the clusters themselves
-        print_SScore(S_Score(Gene_data, km_pred_y))
-        print_CH_score(CH_score(Gene_data, km_pred_y)) 
-        print_DB_score(DB_score(Gene_data, km_pred_y))
-    
-        print()
-                
     print()
-    if input('view fuzzy c-means evaluation metrics <y/n> ') == 'y':
-        print()
-        print("working on evaluation metrics for fuzzy cmeans")
+    print("showing kmeans evaluation metrics")
+    
+    # cluster quality metrics | how good are the clusters themselves
+    print_SScore(S_Score(Gene_data, km_pred_y))
+    print_CH_score(CH_score(Gene_data, km_pred_y)) 
+    print_DB_score(DB_score(Gene_data, km_pred_y))
+    
+            
+    print()    
+    print()
+    print("showing fuzzy c means evaluation metrics")
 
+    # note : partition shows how much overlap 'fuzz' the data has
+    # values closer to 1 mean less overlap (less fuzz) and more clear partitions
+    print()
+    print(f"fuzz partition coefficient :: {fpc} | range is 0 -> 1; closer to 1 means less overlap and clearer partitions")
+
+print()
